@@ -135,9 +135,14 @@
       EXPENSE: ['🍔 อาหาร/เครื่องดื่ม', '🚗 เดินทาง/น้ำมัน', '🛒 ของใช้ส่วนตัว', '🏠 ค่าบ้าน/น้ำ/ไฟ', '🎮 บันเทิง/เกม', '📦 อื่นๆ'],
       INCOME: ['💼 เงินเดือน', '⚡ รายได้เสริม', '📈 เงินปันผล/ดอกเบี้ย', '🎁 อื่นๆ']
     };
+    const DEFAULT_GAS_URL = '__GAS_URL_PLACEHOLDER__';
 
     let currentType = 'EXPENSE';
     let transactions = [];
+
+    if (!localStorage.getItem('gas_url') && !DEFAULT_GAS_URL.includes('PLACEHOLDER')) {
+        localStorage.setItem('gas_url', DEFAULT_GAS_URL);
+    }
 
     // โหลดค่าเริ่มต้นเมื่อเปิดหน้าเว็บ
     window.addEventListener('DOMContentLoaded', () => {
