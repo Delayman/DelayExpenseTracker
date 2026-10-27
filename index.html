@@ -20,7 +20,7 @@
     }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen font-sans pb-10">
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white pb-10">
 
   <script>
     const INJECTED_GAS_URL = '__GAS_URL_PLACEHOLDER__';
@@ -63,33 +63,33 @@
         </select>
       </div>
       
-      <!-- สรุปยอด (Modern Light Theme) -->
-      <div class="flex flex-col items-center justify-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm mb-4">
+      <!-- สรุปยอด (Dark Theme, Layout ใหม่) -->
+      <div class="flex flex-col items-center justify-center bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-sm mb-4">
         
         <!-- Chart -->
         <div class="relative w-36 h-36 flex-shrink-0">
           <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-            <!-- Base (สีเทาอ่อนเมื่อไม่มีข้อมูล) -->
-            <circle cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#f3f4f6" stroke-width="3"></circle>
+            <!-- Base (สีเทาเข้มเมื่อไม่มีข้อมูล) -->
+            <circle cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#334155" stroke-width="3"></circle>
             <!-- Income (สีเขียว) -->
-            <circle id="donutIncome" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#22c55e" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
+            <circle id="donutIncome" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#34d399" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
             <!-- Expense (สีแดง) -->
-            <circle id="donutExpense" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#dc2626" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
+            <circle id="donutExpense" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#fb7185" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
           </svg>
           
-          <!-- ยอดคงเหลือตรงกลาง (สีฟ้าตามรูป) -->
+          <!-- ยอดคงเหลือตรงกลาง (สีฟ้า) -->
           <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span id="sumBalance" class="text-3xl font-bold text-blue-500 truncate w-24 text-center">0</span>
+            <span id="sumBalance" class="text-3xl font-bold text-sky-400 truncate w-24 text-center">0</span>
           </div>
         </div>
 
-        <!-- Legend ตัวเลข (จัดเรียงด้านล่างตามรูป) -->
+        <!-- Legend ตัวเลข (จัดเรียงด้านล่าง) -->
         <div class="flex items-center justify-center gap-8 w-full mt-6">
           <div class="text-center">
-            <p class="text-base font-bold text-green-500">รายรับ <span id="sumIncome">0</span></p>
+            <p class="text-base font-bold text-emerald-400">รายรับ <span id="sumIncome">0</span></p>
           </div>
           <div class="text-center">
-            <p class="text-base font-bold text-red-600">รายจ่าย <span id="sumExpense">0</span></p>
+            <p class="text-base font-bold text-rose-400">รายจ่าย <span id="sumExpense">0</span></p>
           </div>
         </div>
         
