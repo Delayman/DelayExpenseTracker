@@ -20,7 +20,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white pb-10">
+<body class="bg-gray-50 text-gray-800 min-h-screen font-sans pb-10">
 
   <script>
     const INJECTED_GAS_URL = '__GAS_URL_PLACEHOLDER__';
@@ -63,36 +63,36 @@
         </select>
       </div>
       
-      <!-- Donut Chart & Legend -->
-      <div class="flex items-center justify-between bg-slate-800/80 border border-slate-700/50 p-5 rounded-xl">
+      <!-- สรุปยอด (Modern Light Theme) -->
+      <div class="flex flex-col items-center justify-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm mb-4">
+        
         <!-- Chart -->
-        <div class="relative w-28 h-28 flex-shrink-0">
+        <div class="relative w-36 h-36 flex-shrink-0">
           <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-            <!-- Base (สีเทาเมื่อไม่มีข้อมูล) -->
-            <circle cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#334155" stroke-width="3"></circle>
+            <!-- Base (สีเทาอ่อนเมื่อไม่มีข้อมูล) -->
+            <circle cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#f3f4f6" stroke-width="3"></circle>
             <!-- Income (สีเขียว) -->
-            <circle id="donutIncome" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#34d399" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
+            <circle id="donutIncome" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#22c55e" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
             <!-- Expense (สีแดง) -->
-            <circle id="donutExpense" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#fb7185" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
+            <circle id="donutExpense" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#dc2626" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
           </svg>
-          <!-- ยอดคงเหลือตรงกลาง -->
+          
+          <!-- ยอดคงเหลือตรงกลาง (สีฟ้าตามรูป) -->
           <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="text-[10px] text-slate-400 uppercase">คงเหลือ</span>
-            <span id="sumBalance" class="text-sm font-bold text-sky-400 mt-0.5 truncate w-20 text-center">0</span>
+            <span id="sumBalance" class="text-3xl font-bold text-blue-500 truncate w-24 text-center">0</span>
           </div>
         </div>
 
-        <!-- Legend ตัวเลข -->
-        <div class="flex flex-col justify-center space-y-3 w-1/2 pl-4 border-l border-slate-700/50">
-          <div>
-            <p class="text-xs text-slate-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> รายรับ</p>
-            <p id="sumIncome" class="text-sm font-bold text-emerald-400 mt-0.5">0</p>
+        <!-- Legend ตัวเลข (จัดเรียงด้านล่างตามรูป) -->
+        <div class="flex items-center justify-center gap-8 w-full mt-6">
+          <div class="text-center">
+            <p class="text-base font-bold text-green-500">รายรับ <span id="sumIncome">0</span></p>
           </div>
-          <div>
-            <p class="text-xs text-slate-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> รายจ่าย</p>
-            <p id="sumExpense" class="text-sm font-bold text-rose-400 mt-0.5">0</p>
+          <div class="text-center">
+            <p class="text-base font-bold text-red-600">รายจ่าย <span id="sumExpense">0</span></p>
           </div>
         </div>
+        
       </div>
     </div>
 
@@ -367,25 +367,37 @@
         else sumExp += amt;
       });
 
-      document.getElementById('sumIncome').textContent = sumInc.toLocaleString('th-TH');
-      document.getElementById('sumExpense').textContent = sumExp.toLocaleString('th-TH');
-      document.getElementById('sumBalance').textContent = (sumInc - sumExp).toLocaleString('th-TH');
+        document.getElementById('sumIncome').textContent = sumInc.toLocaleString('th-TH');
+        document.getElementById('sumExpense').textContent = sumExp.toLocaleString('th-TH');
+        document.getElementById('sumBalance').textContent = (sumInc - sumExp).toLocaleString('th-TH');
 
-      // ควบคุมการแสดงผล Donut Chart
-      const total = sumInc + sumExp;
-      const incCircle = document.getElementById('donutIncome');
-      const expCircle = document.getElementById('donutExpense');
-      
-      if (total === 0) {
-        incCircle.setAttribute('stroke-dasharray', '0 100');
-        expCircle.setAttribute('stroke-dasharray', '0 100');
-      } else {
-        const incPct = (sumInc / total) * 100;
-        const expPct = (sumExp / total) * 100;
-        incCircle.setAttribute('stroke-dasharray', `${incPct} ${100 - incPct}`);
-        expCircle.setAttribute('stroke-dasharray', `${expPct} ${100 - expPct}`);
-        expCircle.setAttribute('stroke-dashoffset', `-${incPct}`);
-      }
+        // ======== อัปเดตวิธีคำนวณ Donut Chart ใหม่ ========
+        const incCircle = document.getElementById('donutIncome');
+        const expCircle = document.getElementById('donutExpense');
+        
+        if (sumInc === 0 && sumExp === 0) {
+          // 1. ยังไม่มีประวัติเลย -> กราฟเป็นสีเทา (ซ่อนเขียวและแดง)
+          incCircle.setAttribute('stroke-dasharray', '0 100');
+          expCircle.setAttribute('stroke-dasharray', '0 100');
+        } else if (sumExp >= sumInc) {
+          // 2. ขาดทุน หรือ รายจ่ายเท่ากับรายรับพอดี -> สีแดง 100% ไม่มีสีเขียว
+          incCircle.setAttribute('stroke-dasharray', '0 100');
+          expCircle.setAttribute('stroke-dasharray', '100 0');
+          expCircle.setAttribute('stroke-dashoffset', '0');
+        } else {
+          // 3. มีกำไร (รายรับ > รายจ่าย) -> คำนวณสัดส่วนว่ารายจ่ายกินไปกี่ %
+          const expPct = (sumExp / sumInc) * 100;
+          const profitPct = 100 - expPct;
+          
+          // วาดสีแดงเริ่มจาก 0
+          expCircle.setAttribute('stroke-dasharray', `${expPct} ${100 - expPct}`);
+          expCircle.setAttribute('stroke-dashoffset', '0');
+          
+          // วาดสีเขียว (กำไร) ต่อท้ายพื้นที่สีแดง
+          incCircle.setAttribute('stroke-dasharray', `${profitPct} ${100 - profitPct}`);
+          incCircle.setAttribute('stroke-dashoffset', `-${expPct}`);
+        }
+        // ===============================================
 
       if (filteredTx.length === 0) {
         listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">ไม่มีรายการในเดือนนี้</div>`;
