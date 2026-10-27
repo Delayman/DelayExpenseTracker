@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Expense Tracker</title>
+  
+  <!-- PWA & iOS Standalone Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Expenses">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2344/2344132.png">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
+
+  <div class="max-w-md mx-auto p-4 space-y-5">
+    
+    <!-- Header -->
+    <header class="flex justify-between items-center pt-2">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-white">💰 บันทึกรายรับ-รายจ่าย</h1>
+        <p id="syncStatus" class="text-xs text-slate-400">พร้อมใช้งาน</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="fetchTransactions()" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition" title="รีเฟรชข้อมูล">
+          🔄
+        </button>
+        <button onclick="openSettings()" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition" title="ตั้งค่า API">
+          ⚙️
+        </button>
+      </div>
+    </header>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-3 gap-2.5 text-center">
+      <div class="bg-slate-800/80 border border-slate-700/50 p-3 rounded-xl">
+        <p class="text-[11px] text-slate-400 uppercase">รายรับ</p>
+        <p id="sumIncome" class="text-sm font-bold text-emerald-400 mt-0.5">0</p>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700/50 p-3 rounded-xl">
+        <p class="text-[11px] text-slate-400 uppercase">รายจ่าย</p>
+        <p id="sumExpense" class="text-sm font-bold text-rose-400 mt-0.5">0</p>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700/50 p-3 rounded-xl">
+        <p class="text-[11px] text-slate-400 uppercase">คงเหลือ</p>
+        <p id="sumBalance" class="text-sm font-bold text-sky-400 mt-0.5">0</p>
+      </div>
+    </div>
+
+    <!-- Input Form -->
+    <form id="txForm" onsubmit="handleFormSubmit(event)" class="bg-slate-800 border border-slate-700/60 p-4 rounded-2xl space-y-4 shadow-lg">
+      
+      <!-- Type Toggle -->
+      <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl">
+        <button type="button" id="btnExpense" onclick="setTxType('EXPENSE')" class="py-2 rounded-lg text-sm font-semibold transition bg-rose-600 text-white shadow">
+          รายจ่าย
+        </button>
+        <button type="button" id="btnIncome" onclick="setTxType('INCOME')" class="py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white">
+          รายรับ
+        </button>
+      </div>
+
+      <!-- Category & Amount -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">หมวดหมู่</label>
+          <select id="category" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">จำนวนเงิน (บาท)</label>
+          <input type="number" id="amount" step="0.01" inputmode="decimal" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">หมายเหตุ (ไม่บังคับ)</label>
+        <input type="text" id="note" placeholder="เช่น ข้าวมันไก่, ค่าน้ำมัน, เงินเดือน..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition shadow-md">
+        บันทึกรายการ
+      </button>
+    </form>
+
+    <!-- Recent Transactions -->
+    <div class="space-y-2.5">
+      <div class="flex justify-between items-center">
+        <h2 class="text-sm font-semibold text-slate-300">รายการล่าสุด (50 รายการ)</h2>
+      </div>
+      <div id="txList" class="space-y-2 pb-8">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <h3 class="text-lg font-bold text-white">⚙️ ตั้งค่าการเชื่อมต่อ</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Google Apps Script URL (Web App)</label>
+          <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Secret API Key</label>
+          <input type="password" id="cfgKey" placeholder="YOUR_SECRET_API_KEY" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeSettings()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-700">ยกเลิก</button>
+        <button type="button" onclick="saveSettings()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-semibold text-white">บันทึกและซิงค์ข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // หมวดหมู่เริ่มต้น (แก้ไขเพิ่มเติมได้ตามต้องการ)
+    const CATEGORIES = {
+      EXPENSE: ['🍔 อาหาร/เครื่องดื่ม', '🚗 เดินทาง/น้ำมัน', '🛒 ของใช้ส่วนตัว', '🏠 ค่าบ้าน/น้ำ/ไฟ', '🎮 บันเทิง/เกม', '📦 อื่นๆ'],
+      INCOME: ['💼 เงินเดือน', '⚡ รายได้เสริม', '📈 เงินปันผล/ดอกเบี้ย', '🎁 อื่นๆ']
+    };
+
+    let currentType = 'EXPENSE';
+    let transactions = [];
+
+    // โหลดค่าเริ่มต้นเมื่อเปิดหน้าเว็บ
+    window.addEventListener('DOMContentLoaded', () => {
+      setTxType('EXPENSE');
+      
+      // โหลด Cache ในเครื่องมาแสดงก่อนให้หน้าเว็บดูเร็วทันที
+      const cached = localStorage.getItem('tx_cache');
+      if (cached) {
+        transactions = JSON.parse(cached);
+        renderTransactions();
+      }
+
+      const url = localStorage.getItem('gas_url');
+      const key = localStorage.getItem('gas_key');
+      if (!url || !key) {
+        openSettings();
+      } else {
+        fetchTransactions();
+      }
+    });
+
+    function setTxType(type) {
+      currentType = type;
+      const btnExp = document.getElementById('btnExpense');
+      const btnInc = document.getElementById('btnIncome');
+      
+      if (type === 'EXPENSE') {
+        btnExp.className = 'py-2 rounded-lg text-sm font-semibold transition bg-rose-600 text-white shadow';
+        btnInc.className = 'py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white';
+      } else {
+        btnInc.className = 'py-2 rounded-lg text-sm font-semibold transition bg-emerald-600 text-white shadow';
+        btnExp.className = 'py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white';
+      }
+
+      const select = document.getElementById('category');
+      select.innerHTML = CATEGORIES[type].map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function setStatus(text, isError = false) {
+      const el = document.getElementById('syncStatus');
+      el.textContent = text;
+      el.className = `text-xs ${isError ? 'text-rose-400 font-medium' : 'text-slate-400'}`;
+    }
+
+    // ดึงข้อมูลจาก Google Sheets
+    async function fetchTransactions() {
+      const url = localStorage.getItem('gas_url');
+      const key = localStorage.getItem('gas_key');
+      if (!url || !key) return openSettings();
+
+      setStatus('กำลังซิงค์ข้อมูล...');
+      try {
+        const res = await fetch(`${url}?apiKey=${encodeURIComponent(key)}`, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        const json = await res.json();
+        
+        if (json.status === 'success') {
+          transactions = json.data;
+          localStorage.setItem('tx_cache', JSON.stringify(transactions));
+          renderTransactions();
+          setStatus('ซิงค์ล่าสุด: ' + new Date().toLocaleTimeString('th-TH'));
+        } else {
+          setStatus('ซิงค์ไม่สำเร็จ: ' + json.message, true);
+        }
+      } catch (err) {
+        setStatus('ออฟไลน์ หรือ URL ไม่ถูกต้อง', true);
+      }
+    }
+
+    // บันทึกข้อมูลแบบ Optimistic UI
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const url = localStorage.getItem('gas_url');
+      const key = localStorage.getItem('gas_key');
+      if (!url || !key) return openSettings();
+
+      const amountEl = document.getElementById('amount');
+      const noteEl = document.getElementById('note');
+      const categoryEl = document.getElementById('category');
+
+      const newTx = {
+        timestamp: new Date().toISOString(),
+        type: currentType,
+        category: categoryEl.value,
+        amount: parseFloat(amountEl.value),
+        note: noteEl.value.trim()
+      };
+
+      // 1. Optimistic Update: แสดงบนหน้าจอทันทีและเคลียร์ช่องกรอก
+      transactions.unshift(newTx);
+      localStorage.setItem('tx_cache', JSON.stringify(transactions));
+      renderTransactions();
+      
+      amountEl.value = '';
+      noteEl.value = '';
+      setStatus('กำลังบันทึกลง Google Sheets...');
+
+      // 2. ส่งข้อมูลไปที่ Google Apps Script เบื้องหลัง
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ apiKey: key, ...newTx })
+        });
+        const json = await res.json();
+        
+        if (json.status === 'success') {
+          setStatus('บันทึกสำเร็จ ✓');
+        } else {
+          setStatus('บันทึกผิดพลาด: ' + json.message, true);
+        }
+      } catch (err) {
+        setStatus('ส่งข้อมูลไม่สำเร็จ (เช็คอินเทอร์เน็ต)', true);
+      }
+    }
+
+    function renderTransactions() {
+      const listEl = document.getElementById('txList');
+      let sumInc = 0;
+      let sumExp = 0;
+
+      transactions.forEach(t => {
+        const amt = Number(t.amount) || 0;
+        if (t.type === 'INCOME') sumInc += amt;
+        else sumExp += amt;
+      });
+
+      document.getElementById('sumIncome').textContent = sumInc.toLocaleString('th-TH');
+      document.getElementById('sumExpense').textContent = sumExp.toLocaleString('th-TH');
+      document.getElementById('sumBalance').textContent = (sumInc - sumExp).toLocaleString('th-TH');
+
+      if (transactions.length === 0) {
+        listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">ยังไม่มีรายการบันทึก</div>`;
+        return;
+      }
+
+      listEl.innerHTML = transactions.map(t => {
+        const isInc = t.type === 'INCOME';
+        const dateObj = new Date(t.timestamp);
+        const dateStr = isNaN(dateObj) ? '' : dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        
+        return `
+          <div class="flex justify-between items-center bg-slate-800/60 border border-slate-700/40 px-3.5 py-2.5 rounded-xl">
+            <div class="min-w-0 pr-2">
+              <p class="text-sm font-medium text-slate-200 truncate">${escapeHtml(t.category)} ${t.note ? `<span class="text-xs text-slate-400 font-normal">• ${escapeHtml(t.note)}</span>` : ''}</p>
+              <p class="text-[11px] text-slate-500">${dateStr}</p>
+            </div>
+            <div class="text-sm font-bold whitespace-nowrap ${isInc ? 'text-emerald-400' : 'text-rose-400'}">
+              ${isInc ? '+' : '-'}${Number(t.amount).toLocaleString('th-TH')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    // การจัดการ Modal ตั้งค่า
+    function openSettings() {
+      document.getElementById('cfgUrl').value = localStorage.getItem('gas_url') || '';
+      document.getElementById('cfgKey').value = localStorage.getItem('gas_key') || '';
+      const modal = document.getElementById('settingsModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSettings() {
+      const modal = document.getElementById('settingsModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveSettings() {
+      const url = document.getElementById('cfgUrl').value.trim();
+      const key = document.getElementById('cfgKey').value.trim();
+      if (!url || !key) return alert('กรุณากรอกทั้ง URL และ API Key');
+      
+      localStorage.setItem('gas_url', url);
+      localStorage.setItem('gas_key', key);
+      closeSettings();
+      fetchTransactions();
+    }
+  </script>
+</body>
+</html>
