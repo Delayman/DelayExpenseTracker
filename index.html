@@ -63,18 +63,35 @@
         </select>
       </div>
       
-      <div class="grid grid-cols-3 gap-2.5 text-center">
-        <div class="bg-slate-800/80 border border-slate-700/50 p-3 rounded-xl">
-          <p class="text-[11px] text-slate-400 uppercase">รายรับ</p>
-          <p id="sumIncome" class="text-sm font-bold text-emerald-400 mt-0.5">0</p>
+      <!-- Donut Chart & Legend -->
+      <div class="flex items-center justify-between bg-slate-800/80 border border-slate-700/50 p-5 rounded-xl">
+        <!-- Chart -->
+        <div class="relative w-28 h-28 flex-shrink-0">
+          <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <!-- Base (สีเทาเมื่อไม่มีข้อมูล) -->
+            <circle cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#334155" stroke-width="3"></circle>
+            <!-- Income (สีเขียว) -->
+            <circle id="donutIncome" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#34d399" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
+            <!-- Expense (สีแดง) -->
+            <circle id="donutExpense" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#fb7185" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
+          </svg>
+          <!-- ยอดคงเหลือตรงกลาง -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-[10px] text-slate-400 uppercase">คงเหลือ</span>
+            <span id="sumBalance" class="text-sm font-bold text-sky-400 mt-0.5 truncate w-20 text-center">0</span>
+          </div>
         </div>
-        <div class="bg-slate-800/80 border border-slate-700/50 p-3 rounded-xl">
-          <p class="text-[11px] text-slate-400 uppercase">รายจ่าย</p>
-          <p id="sumExpense" class="text-sm font-bold text-rose-400 mt-0.5">0</p>
-        </div>
-        <div class="bg-slate-800/80 border border-slate-700/50 p-3 rounded-xl">
-          <p class="text-[11px] text-slate-400 uppercase">คงเหลือ</p>
-          <p id="sumBalance" class="text-sm font-bold text-sky-400 mt-0.5">0</p>
+
+        <!-- Legend ตัวเลข -->
+        <div class="flex flex-col justify-center space-y-3 w-1/2 pl-4 border-l border-slate-700/50">
+          <div>
+            <p class="text-xs text-slate-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> รายรับ</p>
+            <p id="sumIncome" class="text-sm font-bold text-emerald-400 mt-0.5">0</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> รายจ่าย</p>
+            <p id="sumExpense" class="text-sm font-bold text-rose-400 mt-0.5">0</p>
+          </div>
         </div>
       </div>
     </div>
@@ -353,6 +370,22 @@
       document.getElementById('sumIncome').textContent = sumInc.toLocaleString('th-TH');
       document.getElementById('sumExpense').textContent = sumExp.toLocaleString('th-TH');
       document.getElementById('sumBalance').textContent = (sumInc - sumExp).toLocaleString('th-TH');
+
+      // ควบคุมการแสดงผล Donut Chart
+      const total = sumInc + sumExp;
+      const incCircle = document.getElementById('donutIncome');
+      const expCircle = document.getElementById('donutExpense');
+      
+      if (total === 0) {
+        incCircle.setAttribute('stroke-dasharray', '0 100');
+        expCircle.setAttribute('stroke-dasharray', '0 100');
+      } else {
+        const incPct = (sumInc / total) * 100;
+        const expPct = (sumExp / total) * 100;
+        incCircle.setAttribute('stroke-dasharray', `${incPct} ${100 - incPct}`);
+        expCircle.setAttribute('stroke-dasharray', `${expPct} ${100 - expPct}`);
+        expCircle.setAttribute('stroke-dashoffset', `-${incPct}`);
+      }
 
       if (filteredTx.length === 0) {
         listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">ไม่มีรายการในเดือนนี้</div>`;
