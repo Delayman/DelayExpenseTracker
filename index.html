@@ -12,6 +12,9 @@
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2344/2344132.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- นำเข้า Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <style>
     body {
       -webkit-tap-highlight-color: transparent;
@@ -30,7 +33,7 @@
     }
   </script>
 
-  <!-- ================= LOADING OVERLAY ================= -->
+  <!-- Loading Overlay -->
   <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity">
     <div class="flex flex-col items-center space-y-4">
       <svg class="animate-spin h-12 w-12 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -40,7 +43,6 @@
       <p id="loadingText" class="text-sm font-medium text-slate-300 tracking-wide">กำลังประมวลผล...</p>
     </div>
   </div>
-  <!-- =================================================== -->
 
   <div class="max-w-md mx-auto p-4 space-y-5">
     
@@ -57,7 +59,11 @@
 
     <div class="space-y-3">
       <div class="flex justify-between items-center">
-        <h2 class="text-sm font-semibold text-slate-300">สรุปยอด</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-slate-300">สรุปยอด</h2>
+          <!-- กล่องแสดง Streak -->
+          <div id="streakBadge" class="hidden"></div>
+        </div>
         <select id="monthFilter" onchange="renderTransactions()" class="bg-slate-800 text-xs text-white border border-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
           <option value="ALL">ทั้งหมด</option>
         </select>
@@ -65,25 +71,19 @@
       
       <!-- สรุปยอด (Dark Theme, Layout ใหม่) -->
       <div class="flex flex-col items-center justify-center bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-sm mb-4">
-        
         <!-- Chart -->
         <div class="relative w-36 h-36 flex-shrink-0">
           <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-            <!-- Base (สีเทาเข้มเมื่อไม่มีข้อมูล) -->
             <circle cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#334155" stroke-width="3"></circle>
-            <!-- Income (สีเขียว) -->
             <circle id="donutIncome" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#34d399" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
-            <!-- Expense (สีแดง) -->
             <circle id="donutExpense" cx="18" cy="18" r="15.91549431" fill="transparent" stroke="#fb7185" stroke-width="3" stroke-dasharray="0 100" stroke-dashoffset="0" class="transition-all duration-700 ease-out"></circle>
           </svg>
-          
-          <!-- ยอดคงเหลือตรงกลาง (สีฟ้า) -->
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <span id="sumBalance" class="text-2xl font-bold text-sky-400 px-2 text-center w-full">0</span>
           </div>
         </div>
 
-        <!-- Legend ตัวเลข (จัดเรียงด้านล่าง) -->
+        <!-- Legend ตัวเลข -->
         <div class="flex items-center justify-center gap-8 w-full mt-6">
           <div class="text-center">
             <p class="text-base font-bold text-emerald-400">รายรับ <span id="sumIncome">0</span></p>
@@ -92,10 +92,10 @@
             <p class="text-base font-bold text-rose-400">รายจ่าย <span id="sumExpense">0</span></p>
           </div>
         </div>
-        
       </div>
     </div>
 
+    <!-- ฟอร์มกรอกข้อมูล -->
     <form id="txForm" onsubmit="handleFormSubmit(event)" class="bg-slate-800 border border-slate-700/60 p-4 rounded-2xl space-y-4 shadow-lg">
       <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl">
         <button type="button" id="btnExpense" onclick="setTxType('EXPENSE')" class="py-2 rounded-lg text-sm font-semibold transition bg-rose-600 text-white shadow">รายจ่าย</button>
@@ -118,12 +118,24 @@
       <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition shadow-md">บันทึกรายการ</button>
     </form>
 
-    <div class="space-y-2.5">
-      <h2 class="text-sm font-semibold text-slate-300">รายการที่บันทึก</h2>
+    <!-- แท็บ รายการ / สรุปกราฟ -->
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-3 shadow-lg">
+      <div class="flex gap-2 mb-3 bg-slate-900 p-1 rounded-xl">
+        <button id="btnTabList" onclick="switchTab('LIST')" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-slate-700 text-white shadow transition">รายการ</button>
+        <button id="btnTabChart" onclick="switchTab('CHART')" class="flex-1 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition">สรุปกราฟ</button>
+      </div>
+      
+      <!-- รายการ List -->
       <div id="txList" class="space-y-2"></div>
+      
+      <!-- กราฟ Chart.js -->
+      <div id="chartView" class="hidden p-2">
+        <canvas id="categoryChart"></canvas>
+      </div>
     </div>
   </div>
 
+  <!-- Modal ตั้งค่า -->
   <div id="settingsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
       <h3 class="text-lg font-bold text-white">🔒 ยืนยันตัวตน</h3>
@@ -153,8 +165,9 @@
 
     let currentType = 'EXPENSE';
     let transactions = [];
+    let currentTab = 'LIST';
+    let chartInstance = null; // เก็บ Instance ของ Chart.js
 
-    // ======== โค้ดส่วน Loading Overlay ========
     function showLoading(text) {
       document.getElementById('loadingText').textContent = text || 'กำลังประมวลผล...';
       const overlay = document.getElementById('loadingOverlay');
@@ -167,7 +180,6 @@
       overlay.classList.add('hidden');
       overlay.classList.remove('flex');
     }
-    // ==========================================
 
     window.addEventListener('DOMContentLoaded', () => {
       setTxType('EXPENSE');
@@ -198,6 +210,21 @@
       document.getElementById('category').innerHTML = CATEGORIES[type].map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
+    function switchTab(tab) {
+      currentTab = tab;
+      if (tab === 'LIST') {
+        document.getElementById('btnTabList').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-slate-700 text-white shadow transition';
+        document.getElementById('btnTabChart').className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        document.getElementById('txList').classList.remove('hidden');
+        document.getElementById('chartView').classList.add('hidden');
+      } else {
+        document.getElementById('btnTabChart').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-slate-700 text-white shadow transition';
+        document.getElementById('btnTabList').className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        document.getElementById('chartView').classList.remove('hidden');
+        document.getElementById('txList').classList.add('hidden');
+      }
+    }
+
     function setStatus(text, isError = false) {
       const el = document.getElementById('syncStatus');
       el.textContent = text;
@@ -210,7 +237,6 @@
       if (!url || !key) return openSettings();
       
       showLoading('กำลังซิงค์ข้อมูลล่าสุด...');
-      
       try {
         const res = await fetch(`${url}?apiKey=${encodeURIComponent(key)}`, { method: 'GET', redirect: 'follow' });
         const json = await res.json();
@@ -247,7 +273,6 @@
         note: noteEl.value.trim()
       };
 
-      // Optimistic Insert
       transactions.unshift(newTx);
       localStorage.setItem('tx_cache', JSON.stringify(transactions));
       updateMonthOptions();
@@ -257,7 +282,6 @@
       noteEl.value = '';
       
       showLoading('กำลังบันทึกข้อมูล...');
-
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -282,15 +306,12 @@
       if (!url || !key) return openSettings();
 
       const backupTx = [...transactions];
-      
-      // Optimistic Delete
       transactions = transactions.filter(t => String(t.timestamp) !== String(timestampStr));
       localStorage.setItem('tx_cache', JSON.stringify(transactions));
       updateMonthOptions();
       renderTransactions();
       
       showLoading('กำลังลบข้อมูล...');
-
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -299,7 +320,6 @@
           body: JSON.stringify({ apiKey: key, action: 'DELETE', timestamp: timestampStr })
         });
         const json = await res.json();
-        
         if (json.status === 'success') {
           setStatus('ลบสำเร็จ ✓');
         } else {
@@ -339,11 +359,54 @@
       });
 
       select.innerHTML = html;
-      
       if (Array.from(select.options).some(opt => opt.value === currentVal)) {
         select.value = currentVal;
       } else {
         select.value = (monthsSet.size > 0 && currentVal === 'ALL') ? Array.from(monthsSet).sort().reverse()[0] : 'ALL';
+      }
+    }
+
+    // ======== โลจิกคำนวณ No-Spend Streak ========
+    function updateStreak() {
+      // 1. กำหนดหมวดหมู่ที่ถือว่าเป็นของฟุ่มเฟือย (แก้ไขชื่อให้ตรงกับที่คุณตั้งไว้)
+      const frivolousCategories = ['🎮 บันเทิง/เกม', '🛒 ของใช้ส่วนตัว', '📦 อื่นๆ'];
+      
+      const now = new Date();
+      // ตั้งเวลาอ้างอิงเป็นเที่ยงคืนของวันนี้ เพื่อคำนวณส่วนต่างเป็นจำนวนวัน
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      
+      // 2. หารายการฟุ่มเฟือยที่เพิ่งจ่ายไป "ล่าสุด" (โค้ดจะดึงรายการแรกที่เจอเพราะข้อมูลเรียงจากใหม่ไปเก่าอยู่แล้ว)
+      const lastFrivolousTx = transactions.find(t => 
+        t.type === 'EXPENSE' && frivolousCategories.includes(t.category)
+      );
+
+      let streakDays = 0;
+
+      if (lastFrivolousTx) {
+        const txDateObj = new Date(lastFrivolousTx.timestamp);
+        const txDate = new Date(txDateObj.getFullYear(), txDateObj.getMonth(), txDateObj.getDate()).getTime();
+        
+        // เอาวันที่ปัจจุบัน ลบ วันที่จ่ายของฟุ่มเฟือยล่าสุด
+        streakDays = Math.floor((today - txDate) / (1000 * 60 * 60 * 24));
+        if (streakDays < 0) streakDays = 0;
+      } else if (transactions.length > 0) {
+        // ถ้าไม่เคยจ่ายของฟุ่มเฟือยเลย ให้นับตั้งแต่วันแรกสุดที่เริ่มบันทึกรายการ
+        const oldestTx = transactions[transactions.length - 1];
+        const oldestDateObj = new Date(oldestTx.timestamp);
+        const oldestDate = new Date(oldestDateObj.getFullYear(), oldestDateObj.getMonth(), oldestDateObj.getDate()).getTime();
+        streakDays = Math.floor((today - oldestDate) / (1000 * 60 * 60 * 24));
+      }
+
+      // 3. แสดงผล UI
+      const badge = document.getElementById('streakBadge');
+      if (streakDays > 0) {
+        // มี Streak แสดงไฟสีส้ม
+        badge.className = 'flex items-center gap-1 bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full text-xs font-bold border border-orange-500/30 transition-all';
+        badge.innerHTML = `🔥 Streak ${streakDays} วัน`;
+      } else {
+        // วันนี้เผลอจ่ายไปแล้ว แสดงน้ำแข็ง
+        badge.className = 'flex items-center gap-1 bg-slate-700/50 text-slate-400 px-2 py-0.5 rounded-full text-[10px] font-medium border border-slate-600 transition-all';
+        badge.innerHTML = `🧊 Rip bozo Streak`;
       }
     }
 
@@ -361,44 +424,46 @@
       }
 
       let sumInc = 0, sumExp = 0;
+      const categoryTotals = {}; // สำหรับเก็บรวมยอดรายจ่ายแต่ละหมวด
+
       filteredTx.forEach(t => {
         const amt = Number(t.amount) || 0;
-        if (t.type === 'INCOME') sumInc += amt;
-        else sumExp += amt;
+        if (t.type === 'INCOME') {
+          sumInc += amt;
+        } else {
+          sumExp += amt;
+          categoryTotals[t.category] = (categoryTotals[t.category] || 0) + amt; // รวมหมวดหมู่
+        }
       });
 
-        document.getElementById('sumIncome').textContent = sumInc.toLocaleString('th-TH');
-        document.getElementById('sumExpense').textContent = sumExp.toLocaleString('th-TH');
-        document.getElementById('sumBalance').textContent = (sumInc - sumExp).toLocaleString('th-TH');
+      document.getElementById('sumIncome').textContent = sumInc.toLocaleString('th-TH');
+      document.getElementById('sumExpense').textContent = sumExp.toLocaleString('th-TH');
+      document.getElementById('sumBalance').textContent = (sumInc - sumExp).toLocaleString('th-TH');
 
-        // ======== อัปเดตวิธีคำนวณ Donut Chart ใหม่ ========
-        const incCircle = document.getElementById('donutIncome');
-        const expCircle = document.getElementById('donutExpense');
-        
-        if (sumInc === 0 && sumExp === 0) {
-          // 1. ยังไม่มีประวัติเลย -> กราฟเป็นสีเทา (ซ่อนเขียวและแดง)
-          incCircle.setAttribute('stroke-dasharray', '0 100');
-          expCircle.setAttribute('stroke-dasharray', '0 100');
-        } else if (sumExp >= sumInc) {
-          // 2. ขาดทุน หรือ รายจ่ายเท่ากับรายรับพอดี -> สีแดง 100% ไม่มีสีเขียว
-          incCircle.setAttribute('stroke-dasharray', '0 100');
-          expCircle.setAttribute('stroke-dasharray', '100 0');
-          expCircle.setAttribute('stroke-dashoffset', '0');
-        } else {
-          // 3. มีกำไร (รายรับ > รายจ่าย) -> คำนวณสัดส่วนว่ารายจ่ายกินไปกี่ %
-          const expPct = (sumExp / sumInc) * 100;
-          const profitPct = 100 - expPct;
-          
-          // วาดสีแดงเริ่มจาก 0
-          expCircle.setAttribute('stroke-dasharray', `${expPct} ${100 - expPct}`);
-          expCircle.setAttribute('stroke-dashoffset', '0');
-          
-          // วาดสีเขียว (กำไร) ต่อท้ายพื้นที่สีแดง
-          incCircle.setAttribute('stroke-dasharray', `${profitPct} ${100 - profitPct}`);
-          incCircle.setAttribute('stroke-dashoffset', `-${expPct}`);
-        }
-        // ===============================================
+      // อัปเดตกราฟ Donut ด้านบน
+      const incCircle = document.getElementById('donutIncome');
+      const expCircle = document.getElementById('donutExpense');
+      
+      if (sumInc === 0 && sumExp === 0) {
+        incCircle.setAttribute('stroke-dasharray', '0 100');
+        expCircle.setAttribute('stroke-dasharray', '0 100');
+      } else if (sumExp >= sumInc) {
+        incCircle.setAttribute('stroke-dasharray', '0 100');
+        expCircle.setAttribute('stroke-dasharray', '100 0');
+        expCircle.setAttribute('stroke-dashoffset', '0');
+      } else {
+        const expPct = (sumExp / sumInc) * 100;
+        const profitPct = 100 - expPct;
+        expCircle.setAttribute('stroke-dasharray', `${expPct} ${100 - expPct}`);
+        expCircle.setAttribute('stroke-dashoffset', '0');
+        incCircle.setAttribute('stroke-dasharray', `${profitPct} ${100 - profitPct}`);
+        incCircle.setAttribute('stroke-dashoffset', `-${expPct}`);
+      }
 
+      // วาด Chart.js สำหรับแท็บ "สรุปกราฟ"
+      renderCategoryChart(categoryTotals);
+
+      // เรนเดอร์รายการ List
       if (filteredTx.length === 0) {
         listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">ไม่มีรายการในเดือนนี้</div>`;
         return;
@@ -410,7 +475,7 @@
         const dateStr = isNaN(dateObj) ? '' : dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         
         return `
-          <div class="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 px-3.5 py-2.5 rounded-xl gap-2">
+          <div class="flex items-center justify-between bg-slate-800/40 border border-slate-700/40 px-3.5 py-2.5 rounded-xl gap-2">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-slate-200 truncate">${escapeHtml(t.category)} ${t.note ? `<span class="text-xs text-slate-400 font-normal">• ${escapeHtml(t.note)}</span>` : ''}</p>
               <p class="text-[11px] text-slate-500">${dateStr}</p>
@@ -426,6 +491,48 @@
           </div>
         `;
       }).join('');
+    }
+
+    function renderCategoryChart(dataObj) {
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      if (chartInstance) {
+        chartInstance.destroy(); // ลบกราฟเก่าทิ้งก่อนวาดใหม่
+      }
+
+      // กรองและเรียงลำดับจากมากไปน้อย
+      const sortedCategories = Object.entries(dataObj).sort((a, b) => b[1] - a[1]);
+      const labels = sortedCategories.map(item => item[0]);
+      const data = sortedCategories.map(item => item[1]);
+
+      if (labels.length === 0) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        return;
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: [
+              '#fb7185', '#38bdf8', '#fbbf24', '#34d399', 
+              '#a78bfa', '#fb923c', '#818cf8', '#f472b6'
+            ],
+            borderWidth: 2,
+            borderColor: '#1e293b' // สีขอบให้กลืนกับพื้นหลัง
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#cbd5e1', font: { family: 'sans-serif', size: 12 }, padding: 15 }
+            }
+          }
+        }
+      });
     }
 
     function escapeHtml(str) {
